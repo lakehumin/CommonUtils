@@ -7,12 +7,12 @@ package com.lake.common_utils.stringutils;
  */
 public class StringUtils {
     
-    public boolean isEmpty(String s) {
+    public static boolean isEmpty(String s) {
     	if(null == s) return true;
     	return s.isEmpty();
     }
     
-    public boolean isNotEmpty(String s) {
+    public static boolean isNotEmpty(String s) {
     	return !isEmpty(s);
     }
 }
