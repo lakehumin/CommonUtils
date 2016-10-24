@@ -44,7 +44,8 @@ public class DBConnectionPool {
 		try {
 			Class.forName(jdbcDriver);
 		} catch (ClassNotFoundException e) {
-			e.printStackTrace();
+			System.err.println("数据库驱动程序注册失败！");
+			throw new RuntimeException(e);
 		}
 		for (int i = 0; i < initialSize; i++) {
 			connections.add(new DBConnection(createOneConnection()));
