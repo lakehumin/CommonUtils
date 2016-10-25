@@ -9,6 +9,8 @@ import com.lake.common_utils.db_utils.DBConnectionPool.DBConnection;
 /**
  * 通用数据库工具类JDBC的封装的模板，带数据库连接池,线程安全
  * 带默认参数
+ * 一般先init初始化，如果没有，则默认参数初始化
+ * 通过init方法配置参数
  */
 
 /**
@@ -133,7 +135,8 @@ public class DBUtils {
 	//运行前检查初始化
 	public static void add(int id, String name, int age) {
 		if(!checkInit()) {
-			throw new IllegalStateException("DBUtils未初始化");
+//			throw new IllegalStateException("DBUtils未初始化");
+			init();
 		}
 		DBConnection dbconnection = dbConnectionPool.getConnection();
 		try {
@@ -163,7 +166,8 @@ public class DBUtils {
 	
 	public static void delete(String name) {
 		if(!checkInit()) {
-			throw new IllegalStateException("DBUtils未初始化");
+//			throw new IllegalStateException("DBUtils未初始化");
+			init();
 		}
 		DBConnection dbconnection = dbConnectionPool.getConnection();
 		try {
@@ -190,7 +194,8 @@ public class DBUtils {
 	
 	public static void update(int age, String name) {
 		if(!checkInit()) {
-			throw new IllegalStateException("DBUtils未初始化");
+//			throw new IllegalStateException("DBUtils未初始化");
+			init();
 		}
 		DBConnection dbconnection = dbConnectionPool.getConnection();
 		try {
@@ -219,7 +224,8 @@ public class DBUtils {
 	
 	public static String search(String name) {
 		if(!checkInit()) {
-			throw new IllegalStateException("DBUtils未初始化");
+//			throw new IllegalStateException("DBUtils未初始化");
+			init();
 		}
 		DBConnection dbconnection = dbConnectionPool.getConnection();
 		try {
