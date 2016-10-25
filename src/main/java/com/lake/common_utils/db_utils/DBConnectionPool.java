@@ -58,17 +58,18 @@ public class DBConnectionPool {
 			connection = DriverManager.getConnection(dbUrl,   
 			        dbUsername, dbPassword);
 		} catch (SQLException e) {
-			return createOneConnection();
+			System.err.println("创建数据库连接失败");
+			throw new RuntimeException(e);
 		}
         return connection;
 	}
 	
-	public Connection getConnection() {
+	public DBConnection getConnection() {
 		DBConnection dbConnection = getFreeConnection();
 		synchronized (dbConnection) {
 			if(!dbConnection.isBusy()) {
 				dbConnection.setBusy(true);
-				return dbConnection.getConnection();
+				return dbConnection;
 			} else {
 				return getConnection();
 			}
@@ -110,10 +111,10 @@ public class DBConnectionPool {
 		return null;
 	}
 	
-	public void freeConnection(Connection connection) {
+	public void freeConnection(DBConnection dbconnection) {
 		synchronized (connections) {
 			for (DBConnection dbConnection : connections) {
-				if(dbConnection.getConnection() == connection) {
+				if(dbConnection == dbconnection) {
 					dbConnection.setBusy(false);
 					return ;
 				}
@@ -121,13 +122,15 @@ public class DBConnectionPool {
 		}
 	}
 	
-	private static class DBConnection {
+	public static class DBConnection {
 		private Connection connection;
 		private volatile boolean busy;
+		private Map<String,PreparedStatement> pStatMap;
 		
 		public DBConnection(Connection connection) {
 			this.connection = connection;
 			busy = false;
+			pStatMap = new HashMap<String,PreparedStatement>();
 		}
 
 		public Connection getConnection() {
@@ -144,6 +147,15 @@ public class DBConnectionPool {
 
 		public void setBusy(boolean busy) {
 			this.busy = busy;
+		}
+		
+		public PreparedStatement getPreparedStatement(String key) {
+			return pStatMap.get(key);
+		}
+		
+		public void setPreparedStatement(String key, 
+				PreparedStatement preparedStatement) {
+			pStatMap.put(key,preparedStatement);
 		}
 	}
 }

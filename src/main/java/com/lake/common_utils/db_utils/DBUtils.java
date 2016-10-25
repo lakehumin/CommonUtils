@@ -1,7 +1,10 @@
 package com.lake.common_utils.db_utils;
 
 import java.sql.*;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+
+import com.lake.common_utils.db_utils.DBConnectionPool.DBConnection;
 
 /**
  * 通用数据库工具类JDBC的封装的模板，带数据库连接池,线程安全
@@ -97,6 +100,12 @@ public class DBUtils {
 		sqlMap = new HashMap<String,String>();
 		sqlMap.put("add", "insert into " + dbTableName + 
 				" (id, name, age, date) values (?,?,?,?)");
+		sqlMap.put("delete", "delete from " + dbTableName + 
+				" where name = ?");
+		sqlMap.put("update", "update " + dbTableName + 
+				" set age = ?, date = ? where name = ?");
+		sqlMap.put("search", "select * from " + dbTableName + 
+				" where name = ?");
 	}
 	
 	private static boolean checkInit() {
@@ -106,17 +115,150 @@ public class DBUtils {
 		return false;
 	}
 	
+	private static PreparedStatement getPreparedStatement(String key,
+			DBConnection dbconnection) {
+		PreparedStatement ps = dbconnection.getPreparedStatement(key);
+		if(null == ps) {
+			try {
+				ps = dbconnection.getConnection().prepareStatement(sqlMap.get(key));
+				dbconnection.setPreparedStatement(key, ps);
+			} catch (SQLException e) {
+				System.err.println("prepareStatement创建失败！");
+				e.printStackTrace();;
+			}
+		}
+		return ps;
+	}
+	
 	//运行前检查初始化
-	public static void add(Class<?> clazz) {
+	public static void add(int id, String name, int age) {
 		if(!checkInit()) {
 			throw new IllegalStateException("DBUtils未初始化");
 		}
-		Connection connection = dbConnectionPool.getConnection();
-		PreparedStatement ps = null;
+		DBConnection dbconnection = dbConnectionPool.getConnection();
 		try {
-			 ps = connection.prepareStatement("");
-		} catch (SQLException e) {
-			e.printStackTrace();
+			PreparedStatement ps = getPreparedStatement("add",dbconnection);
+			if(null == ps) return ;
+			try {
+				 ps.setInt(1, id);
+				 ps.setString(2, name);
+				 ps.setInt(3, age);
+				 ps.setTimestamp(4, new Timestamp(System.currentTimeMillis()));
+			} catch (SQLException e) {
+				System.err.println("prepareStatement设置参数失败！");
+				e.printStackTrace();
+				return ;
+			}
+			try {
+				ps.execute();
+			} catch (SQLException e) {
+				System.err.println("sql执行失败！");
+				e.printStackTrace();
+				return ;
+			}
+		} finally {
+			dbConnectionPool.freeConnection(dbconnection);
+		}
+	}
+	
+	public static void delete(String name) {
+		if(!checkInit()) {
+			throw new IllegalStateException("DBUtils未初始化");
+		}
+		DBConnection dbconnection = dbConnectionPool.getConnection();
+		try {
+			PreparedStatement ps = getPreparedStatement("delete",dbconnection);
+			if(null == ps) return ;
+			try {
+				 ps.setString(1, name);
+			} catch (SQLException e) {
+				System.err.println("prepareStatement创建失败！");
+				e.printStackTrace();
+				return ;
+			}
+			try {
+				ps.execute();
+			} catch (SQLException e) {
+				System.err.println("sql执行失败！");
+				e.printStackTrace();
+				return ;
+			}
+		} finally {
+			dbConnectionPool.freeConnection(dbconnection);
+		}
+	}
+	
+	public static void update(int age, String name) {
+		if(!checkInit()) {
+			throw new IllegalStateException("DBUtils未初始化");
+		}
+		DBConnection dbconnection = dbConnectionPool.getConnection();
+		try {
+			PreparedStatement ps = getPreparedStatement("update",dbconnection);
+			if(null == ps) return ;
+			try {
+				 ps.setInt(1, age);
+				 ps.setTimestamp(2, new Timestamp(System.currentTimeMillis()));
+				 ps.setString(3, name);
+			} catch (SQLException e) {
+				System.err.println("prepareStatement创建失败！");
+				e.printStackTrace();
+				return ;
+			}
+			try {
+				ps.execute();
+			} catch (SQLException e) {
+				System.err.println("sql执行失败！");
+				e.printStackTrace();
+				return ;
+			}
+		} finally {
+			dbConnectionPool.freeConnection(dbconnection);
+		}
+	}
+	
+	public static String search(String name) {
+		if(!checkInit()) {
+			throw new IllegalStateException("DBUtils未初始化");
+		}
+		DBConnection dbconnection = dbConnectionPool.getConnection();
+		try {
+			PreparedStatement ps = getPreparedStatement("search",dbconnection);
+			if(null == ps) return null;
+			try {
+				 ps.setString(1, name);
+			} catch (SQLException e) {
+				System.err.println("prepareStatement创建失败！");
+				e.printStackTrace();
+				return null;
+			}
+			ResultSet rs = null;
+			try {
+				rs = ps.executeQuery();
+				String ans = "";
+				while(rs.next()) {
+					ans += rs.getInt("id") + " ";
+					ans += rs.getString("name") + " ";
+					ans += rs.getInt("age") + " ";
+					ans += rs.getTimestamp("date") + "\n";
+				}
+				return ans;
+			} catch (SQLException e) {
+				System.err.println("sql执行失败！");
+				e.printStackTrace();
+				return null;
+			} finally {
+				if(null != rs) {
+					try {
+						rs.close();
+					} catch (SQLException e) {
+						System.err.println("ResultSet关闭失败！");
+						e.printStackTrace();
+					}
+				}
+			}
+		} finally {
+			dbConnectionPool.freeConnection(dbconnection);
 		}
 	}
 }
